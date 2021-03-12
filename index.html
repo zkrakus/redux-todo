@@ -72,6 +72,7 @@
             }
             }
 
+            // checker middleware
             const checker = (store) => (next) => (action) => {
                 if(
                     action.type === ADD_TODO &&
@@ -90,13 +91,15 @@
                 return next(action)
             }
 
-            // Middleware
-            function checker(store){
-                return function(next){
-                    return function(action){
-                       
-                    }
-                }
+            // logger middleware
+            const logger = (store) => (next) => (action) => {
+                console.group(action.type)
+                console.log('The action: ', action)
+                const result = next(action) // this will call dispatch since logger is the last middleware action. This is exactly like dispatch(action)
+                console.log('The new state: ', store.getState())
+                console.groupEnd()
+                
+                return result;
             }
 
             // Reducer needs to be a pure function
@@ -135,7 +138,7 @@
             const store = Redux.createStore(Redux.combineReducers({
                 todos,
                 goals
-            }), Redux.applyMiddleware(checker));
+            }), Redux.applyMiddleware(checker, logger));
 
             const unsubscribe = store.subscribe(() => {
                 console.log("The new state is:", store.getState());
