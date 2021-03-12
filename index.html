@@ -72,22 +72,29 @@
             }
             }
 
-            function checkAndDispatch(store, action){
-                if(
-                    action.type === ADD_TODO &&
-                    action.todo.name.toLowerCase().indexOf('bitcoin') !== -1
-                ){
-                    return alert("Nope. That's a bad idea.")
-                }
 
-                if(
-                    action.type === ADD_GOAL &&
-                    action.todo.name.toLowerCase().indexOf('bitcoin') !== -1
-                ){
-                    return alert("Nope. That's a bad idea.")
-                }
+            
+            // Middleware
+            function checker(store){
+                return function(next){
+                    return function(action){
+                        if(
+                            action.type === ADD_TODO &&
+                            action.todo.name.toLowerCase().indexOf('bitcoin') !== -1
+                        ){
+                            return alert("Nope. That's a bad idea.")
+                        }
 
-                return store.dispatch(action)
+                        if(
+                            action.type === ADD_GOAL &&
+                            action.todo.name.toLowerCase().indexOf('bitcoin') !== -1
+                        ){
+                            return alert("Nope. That's a bad idea.")
+                        }
+
+                        return next(action)
+                    }
+                }
             }
 
             // Reducer needs to be a pure function
@@ -126,7 +133,7 @@
             const store = Redux.createStore(Redux.combineReducers({
                 todos,
                 goals
-            }));
+            }), Redux.applyMiddleware(checker));
 
             const unsubscribe = store.subscribe(() => {
                 console.log("The new state is:", store.getState());
@@ -141,38 +148,8 @@
                 todos.forEach(addTodoToDom)
             })
 
-            // store.dispatch(addTodoAction({
-            //   id: 0,
-            //   name: 'Walk the dog',
-            //   complete: false,
-            // }))
-
-            // store.dispatch(addTodoAction({
-            //   id: 1,
-            //   name: 'Wash the car',
-            //   complete: false,
-            // }))
-
-
-
-            // store.dispatch(removeTodoAction(1))
-
-            // store.dispatch(toggleTodoAction(0))
-
-            // store.dispatch(addGoalAction({
-            //   id: 0,
-            //   name: 'Learn Redux'
-            // }))
-
-            // store.dispatch(addGoalAction({
-            //   id: 1,
-            //   name: 'Lose 20 pounds'
-            // }))
-
-            // store.dispatch(removeGoalAction(0))
 
             // Dom Code
-
             function createRemoveButton(onClick){
                 const removeBtn = document.createElement('button')
                 removeBtn.innerHTML = 'X'
@@ -186,7 +163,7 @@
                 const text = document.createTextNode(todo.name);
 
                 const removeBtn = createRemoveButton(() => {
-                    checkAndDispatch(store, removeTodoAction(todo.id))
+                    store.dispatch(removeTodoAction(todo.id))
                 })
 
                 node.appendChild(text)
@@ -194,7 +171,7 @@
 
                 node.style.textDecoration = todo.complete ? 'line-through' : 'none'
                 node.addEventListener('click', () => {
-                    checkAndDispatch(store, toggleTodoAction(todo.id))
+                    store.dispatch(toggleTodoAction(todo.id))
                 })
 
                 document.getElementById('todos')
@@ -206,7 +183,7 @@
                 const text = document.createTextNode(goal.name)
 
                 const removeBtn = createRemoveButton(() => {
-                    checkAndDispatch(store, removeGoalAction(goal.id))
+                    store.dispatch(removeGoalAction(goal.id))
                 })
 
                 node.appendChild(text)
