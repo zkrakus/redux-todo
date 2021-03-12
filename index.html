@@ -30,32 +30,6 @@
                 return Math.random().toString(36).substring(2) + (new Date()).getTime().toString(36);
             }
 
-            // Redux Code
-            function createStore(reducer) {
-            let state;
-            let listeners = [];
-
-            const getState = () => state;
-
-            const subscribe = (listener) => {
-                listeners.push(listener);
-                return () => {
-                    listeners = listeners.filter((l) => l !== listener);
-                };
-            };
-
-            const dispatch = (action) => {
-                state = reducer(state, action);
-                listeners.forEach((listener) => listener());
-            };
-
-            return {
-                getState,
-                subscribe,
-                dispatch,
-            };
-            }
-
             // App code
             const ADD_TODO = "AD_TODO";
             const REMOVE_TODO = "REMOVE_TODO";
@@ -99,14 +73,6 @@
             }
 
             // Reducer needs to be a pure function
-            // Root Reducer
-            function app(state = [], action){
-                return {
-                    todos: todos(state.todos, action),
-                    goals: goals(state.goals, action)
-                }
-            }
-
             // Reducer
             function todos(state = [], action) {
                 switch (action.type) {
@@ -139,7 +105,11 @@
                 }
             }
 
-            const store = createStore(app);
+            const store = Redux.createStore(Redux.combineReducers({
+                todos,
+                goals
+            }));
+
             const unsubscribe = store.subscribe(() => {
                 console.log("The new state is:", store.getState());
             });
