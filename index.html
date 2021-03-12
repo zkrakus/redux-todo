@@ -72,22 +72,40 @@
             }
             }
 
+            function checkAndDispatch(store, action){
+                if(
+                    action.type === ADD_TODO &&
+                    action.todo.name.toLowerCase().indexOf('bitcoin') !== -1
+                ){
+                    return alert("Nope. That's a bad idea.")
+                }
+
+                if(
+                    action.type === ADD_GOAL &&
+                    action.todo.name.toLowerCase().indexOf('bitcoin') !== -1
+                ){
+                    return alert("Nope. That's a bad idea.")
+                }
+
+                return store.dispatch(action)
+            }
+
             // Reducer needs to be a pure function
             // Reducer
             function todos(state = [], action) {
                 switch (action.type) {
                     case ADD_TODO:
-                    return state.concat([action.todo]);
+                        return state.concat([action.todo]);
                     case "REMOVE_TODO":
-                    return state.filter((todo) => todo.id !== action.id);
+                        return state.filter((todo) => todo.id !== action.id);
                     case "TOGGLE_TODO":
-                    return state.map((todo) =>
-                        todo.id !== action.id
-                        ? todo
-                        : Object.assign({}, todo, { complete: !todo.complete })
-                    );
+                        return state.map((todo) =>
+                            todo.id !== action.id
+                            ? todo
+                            : Object.assign({}, todo, { complete: !todo.complete })
+                        );
                     default:
-                    state;
+                        state;
                 }
 
                 return state;
@@ -97,11 +115,11 @@
             function goals(state = [], action) {
                 switch (action.type) {
                     case "ADD_GOAL":
-                    return state.concat([action.goal]);
+                        return state.concat([action.goal]);
                     case "REMOVE_GOAL":
-                    return state.filter((goal) => goal.id !== action.id);
+                        return state.filter((goal) => goal.id !== action.id);
                     default:
-                    return state;
+                        return state;
                 }
             }
 
@@ -168,7 +186,7 @@
                 const text = document.createTextNode(todo.name);
 
                 const removeBtn = createRemoveButton(() => {
-                    store.dispatch(removeTodoAction(todo.id))
+                    checkAndDispatch(store, removeTodoAction(todo.id))
                 })
 
                 node.appendChild(text)
@@ -176,7 +194,7 @@
 
                 node.style.textDecoration = todo.complete ? 'line-through' : 'none'
                 node.addEventListener('click', () => {
-                    store.dispatch((toggleTodoAction(todo.id)))
+                    checkAndDispatch(store, toggleTodoAction(todo.id))
                 })
 
                 document.getElementById('todos')
@@ -188,7 +206,7 @@
                 const text = document.createTextNode(goal.name)
 
                 const removeBtn = createRemoveButton(() => {
-                    store.dispatch(removeGoalAction(goal.id))
+                    checkAndDispatch(store, removeGoalAction(goal.id))
                 })
 
                 node.appendChild(text)
