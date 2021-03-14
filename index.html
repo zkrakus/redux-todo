@@ -10,25 +10,124 @@
     </head>
 
     <body>
-
-        <div>
-            <h1>Todo List</h1>
-            <input id='todo' type='text' placeholder="Add Todo"/>
-            <button id='todoBtn'>Add Todo</button>
-            <ul id='todos'></ul>
-        </div>
-
-        <div>
-            <h1>Goals</h1>
-            <input id='goal' type="text" placeholder="Add Goal"/>
-            <button id='goalBtn'>Add Goal</button>
-            <ul id='goals'>
-
-            </ul>
-        </div>
-
-        <hr/>
         <div id='app'/>
+
+        
+        <script type="text/javascript">
+            (function () {
+                window.API = {}
+
+                function fail () {
+                    return Math.floor(Math.random()*(5-1)) === 3
+                }
+
+                function generateId () {
+                    return Math.random().toString(36).substring(2);
+                }
+
+                var goals = [
+                    {
+                    id: generateId(),
+                    name: 'Learn Redux',
+                    },
+                    {
+                    id: generateId(),
+                    name: 'Read 50 books this year',
+                    },
+                ];
+
+                var todos = [
+                    {
+                    id: generateId(),
+                    name: 'Walk the dog',
+                    complete: false,
+                    },
+                    {
+                    id: generateId(),
+                    name: 'Wash the car',
+                    complete: false,
+                    },
+                    {
+                    id: generateId(),
+                    name: 'Go to the gym',
+                    complete: true,
+                    }
+                ];
+
+                API.fetchGoals = function () {
+                    return new Promise((res, rej) => {
+                    setTimeout(function () {
+                        res(goals)
+                    }, 2000)
+                    })
+                }
+
+                API.fetchTodos = function () {
+                    return new Promise((res, rej) => {
+                    setTimeout(function () {
+                        res(todos)
+                    }, 2000)
+                    })
+                }
+
+                API.saveTodo = function (name) {
+                    return new Promise((res, rej) => {
+                    setTimeout(() => {
+                        const todo = {
+                        id: generateId(),
+                        name: name,
+                        complete: false,
+                        }
+                        todos = todos.concat([todo]);
+                        fail() ? rej(todo) : res(todo);
+                    }, 300)
+                    })
+                }
+
+                API.saveGoal = function (name) {
+                    return new Promise((res, rej) => {
+                    setTimeout(() => {
+                        const goal = {
+                        id: generateId(),
+                        name: name,
+                        }
+                        goals = goals.concat([goal]);
+                        fail() ? rej(goal) : res(goal);
+                    }, 300)
+                    })
+                }
+
+                API.deleteGoal = function (id) {
+                    return new Promise((res, rej) => {
+                    setTimeout(() => {
+                        goals = goals.filter((goal) => goal.id !== id);
+                        fail() ? rej(): res(goals);
+                    }, 300)
+                    });
+                }
+
+                API.deleteTodo = function (id) {
+                    return new Promise((res, rej) => {
+                    setTimeout(() => {
+                        todos = todos.filter((todo) => todo.id !== id);
+                        fail() ? rej(): res(todos);
+                    }, 300)
+                    });
+                }
+
+                API.saveTodoToggle = function (id) {
+                    return new Promise((res, rej) => {
+                        setTimeout(() => {
+                            todos = todos.map((todo) => todo.id !== id ? todo :
+                                Object.assign({}, todo, {complete: !todo.complete})
+                            );
+
+                            fail() ? rej() : res(todos);
+                        }, 300)
+                    });
+                }
+            })()
+        </script>
 
         <script type="text/javascript">
 
@@ -43,6 +142,7 @@
             const TOGGLE_TODO = "TOGGLE_TODO";
             const ADD_GOAL = "ADD_GOAL";
             const REMOVE_GOAL = "REMOVE_GOAL";
+            const RECEIVE_DATA  = "RECEIVE_DATA";
 
             function addTodoAction (todo) {
             return {
@@ -77,6 +177,14 @@
                 type: REMOVE_GOAL,
                 id,
             }
+            }
+
+            function receiveDataAction( todos, goals){
+                return {
+                    type: RECEIVE_DATA,
+                    goals,
+                    todos
+                }
             }
 
             // checker middleware
@@ -115,14 +223,16 @@
                 switch (action.type) {
                     case ADD_TODO:
                         return state.concat([action.todo]);
-                    case "REMOVE_TODO":
+                    case REMOVE_TODO:
                         return state.filter((todo) => todo.id !== action.id);
-                    case "TOGGLE_TODO":
+                    case TOGGLE_TODO:
                         return state.map((todo) =>
                             todo.id !== action.id
                             ? todo
                             : Object.assign({}, todo, { complete: !todo.complete })
                         );
+                    case RECEIVE_DATA:
+                        return action.todos
                     default:
                         state;
                 }
@@ -133,102 +243,31 @@
             // Reducer
             function goals(state = [], action) {
                 switch (action.type) {
-                    case "ADD_GOAL":
+                    case ADD_GOAL:
                         return state.concat([action.goal]);
-                    case "REMOVE_GOAL":
+                    case REMOVE_GOAL:
                         return state.filter((goal) => goal.id !== action.id);
+                    case RECEIVE_DATA:
+                        return action.goals
                     default:
                         return state;
                 }
             }
 
+            function loading(state = true, action){
+                switch(action.type){
+                    case RECEIVE_DATA:
+                        return false
+                    default : 
+                        return state
+                }
+            }
+
             const store = Redux.createStore(Redux.combineReducers({
                 todos,
-                goals
+                goals,
+                loading,
             }), Redux.applyMiddleware(checker, logger));
-
-            store.subscribe(() => {
-                const {goals, todos} = store.getState()
-                    
-                document.getElementById('todos').innerHTML = ''
-                document.getElementById('goals').innerHTML = ''
-                goals.forEach(addGoalToDom)
-                todos.forEach(addTodoToDom)
-            })
-
-
-            // Dom Code
-            function createRemoveButton(onClick){
-                const removeBtn = document.createElement('button')
-                removeBtn.innerHTML = 'X'
-                removeBtn.addEventListener('click', onClick)
-
-                return removeBtn
-            }
-
-            function addTodoToDom(todo){
-                const node = document.createElement('li')
-                const text = document.createTextNode(todo.name);
-
-                const removeBtn = createRemoveButton(() => {
-                    store.dispatch(removeTodoAction(todo.id))
-                })
-
-                node.appendChild(text)
-                node.appendChild(removeBtn)
-
-                node.style.textDecoration = todo.complete ? 'line-through' : 'none'
-                node.addEventListener('click', () => {
-                    store.dispatch(toggleTodoAction(todo.id))
-                })
-
-                document.getElementById('todos')
-                    .appendChild(node)
-            }
-
-            function addGoalToDom(goal){
-                const node = document.createElement('li')
-                const text = document.createTextNode(goal.name)
-
-                const removeBtn = createRemoveButton(() => {
-                    store.dispatch(removeGoalAction(goal.id))
-                })
-
-                node.appendChild(text)
-                node.appendChild(removeBtn)
-
-                document.getElementById('goals')
-                    .appendChild(node)
-            }
-
-            function addTodo (){
-                const input = document.getElementById('todo')
-                const name = input.value;
-                input.value = ''
-
-                store.dispatch(addTodoAction({
-                    id: generateId(),
-                    name,
-                    complete: false,
-                }))
-            }
-
-            function addGoal (){
-                const input = document.getElementById('goal')
-                const name = input.value
-                input.value = ''
-
-                store.dispatch(addGoalAction({
-                    id: generateId(),
-                    name,
-                }))
-            }
-
-            document.getElementById('todoBtn')
-                .addEventListener('click', addTodo)
-
-            document.getElementById('goalBtn')
-                .addEventListener('click', addGoal)
         </script>
 
         <script type="text/babel">
@@ -254,22 +293,34 @@
             class Todos extends React.Component {
                 addItem = (e) => {
                     e.preventDefault()
-                    const name = this.input.value
-                    this.input.value = ''
 
-                    this.props.store.dispatch(addTodoAction({
-                        id: generateId(),
-                        name,
-                        complete : false
-                    }))
+                    return API.saveTodo(this.input.value)
+                        .then((todo) => {
+                            this.props.store.dispatch(addTodoAction(todo))
+                            this.input.value = ''
+                        })
+                        .catch(() => alert('There was an error. Try again.'))
                 }
+                
 
                 removeItem = (todo) => {
                     this.props.store.dispatch(removeTodoAction(todo.id))
+
+                    return API.deleteTodo(todo.id)
+                        .catch(() =>{
+                            this.props.store.dispatch(addTodoAction(todo.id))
+                            alert('An error has occurred. Try again.')
+                        })
                 }
 
                 toggleItem = (id) => {
                     this.props.store.dispatch(toggleTodoAction(id))
+
+                    return API.toggleTodoAction(id)
+                        .catch(() => {
+                            this.props.store.dispatch(toggleTodoAction(id))
+                            alert(' An error has occurred. Try again.')
+                        })
                 }
 
                 render() {
@@ -296,16 +347,25 @@
             class Goals extends React.Component {
                 addItem = (e) => {
                     e.preventDefault()
-                    const name = this.input.value
-                    this.input.value = '';
 
-                    store.dispatch(addGoalAction({
-                        id: generateId(),
-                        name,
-                    }))
+                    return API.saveGoal(this.input.value)
+                        .then((goal) => {
+                            this.props.store.dispatch(addGoalAction(goal))
+                            this.input.value = '';
+                        })            
+                        .catch(() => alert('There was an error.'))            
+            
                 }
 
-                removeItem = (goal) => {this.props.store.dispatch(removeGoalAction(goal.id))}
+                removeItem = (goal) => {
+                    this.props.store.dispatch(removeGoalAction(goal.id))
+
+                    return API.deleteGoal(goal.id)
+                        .catch(() => {
+                            this.props.store.dispatch(addGoalAction(goal))
+                            alert('An error has occurred. Try again.')
+                        })
+                }
 
                 render() {
                     return (
@@ -330,12 +390,23 @@
                 componentDidMount(){
                     const { store } = this.props
 
+                    Promise.all([
+                        API.fetchTodos(),
+                        API.fetchGoals(),
+                    ]).then(([todos, goals]) => {
+                        store.dispatch(receiveDataAction(todos,goals))
+                    })
+
                     store.subscribe(() => this.forceUpdate())
                 }
 
                 render() {
                     const { store } = this.props;
-                    const {todos, goals} = store.getState();
+                    const {todos, goals, loading} = store.getState();
+
+                    if(loading === true){
+                        return <h3>Loading</h3>
+                    }
 
                     return (
                         <div>
