@@ -257,15 +257,6 @@
                 }
             }
 
-            // thunk middleware
-                const thunk = (store) => (next) => (action) => {
-                    if(typeof(action) === 'function'){
-                        return action(store.dispatch)
-                    }
-
-                return next(action)
-            }
-
             // checker middleware
             const checker = (store) => (next) => (action) => {
                 if(
@@ -346,7 +337,7 @@
                 todos,
                 goals,
                 loading,
-            }), Redux.applyMiddleware(thunk, checker, logger));
+            }), Redux.applyMiddleware(ReduxThunk.default, checker, logger));
         </script>
 
         <script type="text/babel">
